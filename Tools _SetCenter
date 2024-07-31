@@ -1,0 +1,40 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+//https://developer.aliyun.com/article/1008020
+//Unity 模型中心点偏移问题解决方法:
+//解决这种问题的思路是，创建一个新物体作为该模型物体的父级，新物体的坐标位置设为该模型的中心点位置
+//手动的去设置这个位置会比较麻烦，也不能做到十分精确，这时我们需要用到Bounds类Encapsulate函数去计算中心点位置：
+public class AutoModelCenter
+{
+    /// <summary>
+    /// 获取模型的中心点
+    /// </summary>
+    [MenuItem("SKFramework/Tools/GetModelCenter")]
+    public static void GetModelCenter()
+    {
+        //如果未选中任何Transform return
+        if (Selection.activeTransform == null) return;
+        Transform transform = Selection.activeTransform;
+        Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
+        //获取所有MeshRenderer 包括子物体
+        var mrs = transform.GetComponentsInChildren<MeshRenderer>(true);
+        Vector3 center = Vector3.zero;
+        for (int i = 0; i < mrs.Length; i++)
+        {
+            center += mrs[i].bounds.center;
+            //Encapsulate函数重新计算bounds
+            bounds.Encapsulate(mrs[i].bounds);
+        }
+        center /= mrs.Length;
+        //创建一个新物体作为空父级
+        GameObject obj = new GameObject();
+        obj.name = transform.name + "center";
+        obj.transform.position = center;
+        obj.transform.rotation = Quaternion.identity;
+        obj.transform.SetParent(transform.parent);
+        transform.SetParent(obj.transform);
+    }
+}
